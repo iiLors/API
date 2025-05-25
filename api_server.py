@@ -1,30 +1,40 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 import random
 import string
 import os
 
 app = Flask(__name__)
 
-KEY_FILE = "keys.txt"
-
+# توليد مفتاح بالشكل XXXX-XXXX-XXXX-XXXX
 def generate_key():
-    sections = [''.join(random.choices(string.ascii_uppercase + string.digits, k=4)) for _ in range(4)]
-    return '-'.join(sections)
+    return '-'.join(
+        ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+        for _ in range(4)
+    )
 
+# Endpoint يولد مفتاح
 @app.route('/store_key', methods=['POST'])
 def store_key():
     key = generate_key()
-    with open(KEY_FILE, "a") as f:
+
+    # يحفظ المفتاح في ملف keys.txt
+    with open("keys.txt", "a") as f:
         f.write(key + "\n")
+
     return jsonify({"key": key})
 
+# Endpoint يرجع كل المفاتيح المحفوظة
 @app.route('/get_keys', methods=['GET'])
 def get_keys():
-    if not os.path.exists(KEY_FILE):
+    if not os.path.exists("keys.txt"):
         return jsonify({"keys": []})
-    with open(KEY_FILE, "r") as f:
+    
+    with open("keys.txt", "r") as f:
         keys = f.read().splitlines()
+    
     return jsonify({"keys": keys})
 
+# تشغيـل السيرفر على المنفذ اللي تعطيه Railway
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=8000)
+    port = int(os.environ.get('PORT', 5000))  # يستخدم منفذ البيئة
+    app.run(host='0.0.0.0', port=port)
